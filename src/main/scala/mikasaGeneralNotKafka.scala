@@ -137,7 +137,7 @@ object MikasaGeneralNotKafka {
 
 
         //書き出し
-        var tweetTextArray : Array[String] = new Array[String](2)
+        var tweetTextArray : Array[String] = new Array[String](3)
         var tweetUser : String = status.getUser.getName
         var tweetTime : String = status.getCreatedAt.toString
         tweetTextArray(0) = "@"+tweetUser
