@@ -234,6 +234,7 @@ object SplitAddress{
     //var pref = "(\\s..??[県]|\\s...??[県]|北海道|東京都|京都府|大阪府)"
     var pref = "(\\s..??[県]|北海道|東京都|京都府|大阪府|神奈川県|和歌山県|鹿児島県)"
     //4文字の県だけで正規表現でひっかけていると頭に何かついたのも拾ってきてしまう
+    //採取県www
     var returnPref = ""
     //var swarm = "I'm at"
     var p : Pattern = Pattern.compile(pref)
