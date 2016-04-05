@@ -128,7 +128,7 @@ object MikasaGeneralNotKafka {
         if(status.getGeoLocation != null){
           Csvperser.writeToCsvFileGeo(tweetTextArrayGeo)
         }
-        //
+        //ファイル書き出し
       }
       if(japanese_pattern.matcher(tweetText).find()) {  // ひらがなが含まれているツイートのみ処理
         // 不要な文字列の削除
@@ -136,7 +136,7 @@ object MikasaGeneralNotKafka {
         // ツイート本文の解析
 
 
-        //書き出し
+        //ファイル書き出しnonGeo
         var tweetTextArray : Array[String] = new Array[String](3)
         var tweetUser : String = status.getUser.getName
         var tweetTime : String = status.getCreatedAt.toString
@@ -144,8 +144,7 @@ object MikasaGeneralNotKafka {
         tweetTextArray(1) = tweetText
         tweetTextArray(2) = tweetTime
         Csvperser.writeToCsvFile(tweetTextArray)
-        //
-
+        //ファイル書き出しnonGeo
 
 
         val tokens : java.util.List[Token] = CustomTwitterTokenizer4.tokenize(tweetText, dictFilePath)
@@ -227,9 +226,26 @@ object SplitAddress{
   def splitaddress(string: String): String ={
     var pref = "(\\s...??[都県]|北海道|京都府|大阪府)"
     var returnPref = ""
+    var swarm = "I'm at"
     var p : Pattern = Pattern.compile(pref)
     var m : Matcher = p.matcher(string)
     if(m.find()){
+      returnPref = m.group(1)
+      returnPref = returnPref.trim
+    }
+    (returnPref)
+  }
+}
+
+object SplitAddressAndSwarm{
+  def splitaddress(string: String): String ={
+    var pref = "(\\s...??[都県]|北海道|京都府|大阪府)"
+    var returnPref = ""
+    var swarm = "I'm at"
+    var p : Pattern = Pattern.compile(pref)
+    var m : Matcher = p.matcher(string)
+    var s : Matcher = p.matcher(swarm)
+    if(m.find() && s.find()){
       returnPref = m.group(1)
       returnPref = returnPref.trim
     }
