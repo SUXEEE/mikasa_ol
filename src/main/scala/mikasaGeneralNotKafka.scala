@@ -67,9 +67,15 @@ object MikasaGeneralNotKafka {
       "大阪府", "兵庫県", "奈良県", "和歌山県", "鳥取県", "島根県", "岡山県", "広島県", "山口県", "徳島県", "香川県", "愛媛県", "高知県", "福岡県",
       "佐賀県", "長崎県", "熊本県", "大分県", "宮崎県", "鹿児島県", "沖縄県")
 
-    //val stream = TwitterUtils.createStream(ssc, None, searchWordList)
+//    北海道,青森県,岩手県,宮城県,秋田県,山形県,福島県,茨城県,栃木県,群馬県,埼玉県,\
+//    千葉県,東京都,神奈川県,新潟県,富山県,石川県,福井県,山梨県,長野県,岐阜県,静岡県,愛知県,三重県,滋賀県,京都府,\
+//    大阪府,兵庫県,奈良県,和歌山県,鳥取県,島根県,岡山県,広島県,山口県,徳島県,香川県,愛媛県,高知県,福岡県,佐賀県,\
+//    長崎県,熊本県,大分県,宮崎県, 鹿児島県,沖縄県
+
+    //ワードサーチあり
+    val stream = TwitterUtils.createStream(ssc, None, searchWordList)
     //ワードサーチなし
-    val stream = TwitterUtils.createStream(ssc, None)
+    //val stream = TwitterUtils.createStream(ssc, None)
    // Twitterから取得したツイートを処理する
     //val tweetGeoStream = stream.filter()
     val  tweetStream = stream.flatMap(status => {
@@ -100,7 +106,7 @@ object MikasaGeneralNotKafka {
 //        Csvperser.writeToCsvFileGeo(tweetTextArrayGeo)
 //      }
 //      Csvperser.writeToCsvFile(tweetTextArray)
-      print(tweetText)
+      //print(tweetText)
       val japanese_pattern : Pattern = Pattern.compile("[¥¥u3040-¥¥u309F]+") //「ひらがなが含まれているか？」の正規表現
 
       if(status.getGeoLocation != null
@@ -123,11 +129,9 @@ object MikasaGeneralNotKafka {
         tweetTextArrayGeo(3) = tweetTime
         tweetTextArrayGeo(4) = tweetLat
         tweetTextArrayGeo(5) = tweetLong
-
-
-        if(status.getGeoLocation != null){
-          Csvperser.writeToCsvFileGeo(tweetTextArrayGeo)
-        }
+        //if(status.getGeoLocation != null){
+        Csvperser.writeToCsvFileGeo(tweetTextArrayGeo)
+        //}
         //ファイル書き出し
       }
       if(japanese_pattern.matcher(tweetText).find()) {  // ひらがなが含まれているツイートのみ処理
@@ -135,18 +139,18 @@ object MikasaGeneralNotKafka {
         tweetText = tweetText.replaceAll("http(s*)://(.*)/", "").replaceAll("¥¥uff57", "") // 全角の「ｗ」は邪魔www
         // ツイート本文の解析
 
-
         //ファイル書き出しnonGeo
-        var tweetTextArray : Array[String] = new Array[String](3)
-        var tweetUser : String = status.getUser.getName
-        var tweetTime : String = status.getCreatedAt.toString
-        tweetTextArray(0) = "@"+tweetUser
-        tweetTextArray(1) = tweetText
-        tweetTextArray(2) = tweetTime
-        Csvperser.writeToCsvFile(tweetTextArray)
+//        var tweetTextArray : Array[String] = new Array[String](3)
+//        var tweetUser : String = status.getUser.getName
+//        var tweetTime : String = status.getCreatedAt.toString
+//        tweetTextArray(0) = "@"+tweetUser
+//        tweetTextArray(1) = tweetText
+//        tweetTextArray(2) = tweetTime
+//        Csvperser.writeToCsvFile(tweetTextArray)
         //ファイル書き出しnonGeo
 
-
+        var tweetPref : String = SplitAddress.splitaddress(tweetText)
+        var tweetCity : String = SplitAddress.splitaddresscity(tweetText)
         val tokens : java.util.List[Token] = CustomTwitterTokenizer4.tokenize(tweetText, dictFilePath)
         val pattern : Pattern = Pattern.compile("^[a-zA-Z]+$|^[0-9]+$") //「英数字か？」の正規表現
         for(index <- 0 to tokens.size()-1) { //各形態素に対して。。。
@@ -158,13 +162,19 @@ object MikasaGeneralNotKafka {
           if(token.getSurfaceForm().length() >= 2 && !matcher.find()) {
             //わいは今はcsvの列を数えているけど，これで「I'm at」を含んで，正規表現にマッチした都道府県のカウントを行えばよい？
             if (tokens.get(index).getAllFeaturesArray()(0) == "名詞" && (tokens.get(index).getAllFeaturesArray()(1) == "一般" || tokens.get(index).getAllFeaturesArray()(1) == "固有名詞")) {
-              features += tokens.get(index).getSurfaceForm
-
-              println(tokens.get(index).getAllFeaturesArray()(1))
+              //ここで都道府県と連結
+              if(features != tweetPref && features != "日本") {
+                features += tweetPref + ":" + tokens.get(index).getSurfaceForm
+              }
+              //println(tokens.get(index).getAllFeaturesArray()(1))
             } else if (tokens.get(index).getPartOfSpeech == "カスタム名詞") {
-              println(tokens.get(index).getPartOfSpeech)
-              // println(tokens.get(index).getSurfaceForm)
-              features += tokens.get(index).getSurfaceForm
+              //println(tokens.get(index).getPartOfSpeech)
+              //println(tokens.get(index).getSurfaceForm)
+              //ここで都道府県と連結
+              if(features != tweetPref && features != "日本") {
+              //if(features != tweetPref && features != "日本" && features != tweetCity) {
+                features += tweetPref + ":" + tweetPref+tokens.get(index).getSurfaceForm
+              }
             }
           }
         }
@@ -177,17 +187,14 @@ object MikasaGeneralNotKafka {
       override def compare(a: Int, b: Int) = a.compare(b)*(-1)
     }
 
-
     // ウインドウ集計（行末の括弧の位置はコメントを入れるためです、気にしないで下さい。）
     val topCounts60 = tweetStream.map((_, 1)                      // 出現回数をカウントするために各単語に「1」を付与
     ).reduceByKeyAndWindow(_+_, Seconds(5*60)   // ウインドウ幅(60*60sec)に含まれる単語を集める
     ).map{case (topic, count) => (count, topic)  // 単語の出現回数を集計
     }.transform(_.sortByKey(true))               // ソート
 
-
     // TODO スコアリングはタイトルで1つに集計しなおす必要がある
     // TODO 俺ガイル, oregaisu => 正式タイトルに直して集計
-
 
     // 出力
     topCounts60.foreachRDD(rdd => {
@@ -224,9 +231,11 @@ object CustomTwitterTokenizer4 {
 
 object SplitAddress{
   def splitaddress(string: String): String ={
-    var pref = "(\\s...??[都県]|北海道|京都府|大阪府)"
+    //var pref = "(\\s..??[県]|\\s...??[県]|北海道|東京都|京都府|大阪府)"
+    var pref = "(\\s..??[県]|北海道|東京都|京都府|大阪府|神奈川県|和歌山県|鹿児島県)"
+    //4文字の県だけで正規表現でひっかけていると頭に何かついたのも拾ってきてしまう
     var returnPref = ""
-    var swarm = "I'm at"
+    //var swarm = "I'm at"
     var p : Pattern = Pattern.compile(pref)
     var m : Matcher = p.matcher(string)
     if(m.find()){
@@ -235,23 +244,37 @@ object SplitAddress{
     }
     (returnPref)
   }
-}
 
-object SplitAddressAndSwarm{
-  def splitaddress(string: String): String ={
-    var pref = "(\\s...??[都県]|北海道|京都府|大阪府)"
-    var returnPref = ""
-    var swarm = "I'm at"
-    var p : Pattern = Pattern.compile(pref)
-    var m : Matcher = p.matcher(string)
-    var s : Matcher = p.matcher(swarm)
-    if(m.find() && s.find()){
-      returnPref = m.group(1)
-      returnPref = returnPref.trim
-    }
-    (returnPref)
+
+  def splitaddresscity(string: String): String = {
+    var returncity = ""
+
+    //var city = "(東京|茨城|埼玉|栃木|福岡|神奈川|大阪|愛知|兵庫|北海道|札幌|青森|盛岡|仙台|秋田|山形|福島|水戸|宇都宮|前橋|さいたま|千葉|新宿|横浜|新潟|富山|金沢|福井|甲府|長野|岐阜|静岡|名古屋|津|大津|京都|大阪|神戸|奈良|和歌山|鳥取|松江|岡山|広島|山口|徳島|高松|松山|高知|福岡|佐賀|長崎|熊本|大分|宮崎|鹿児島|那覇)"
+    val city = Array("北海道", "青森", "岩手", "宮城", "秋田", "山形", "福島", "茨城", "栃木", "群馬", "埼玉", "千葉",
+      "東京", "神奈川", "新潟", "富山", "石川", "福井", "山梨", "長野", "岐阜", "静岡", "愛知", "三重", "滋賀", "京都",
+      "大阪", "兵庫", "奈良", "和歌山", "鳥取", "島根", "岡山", "広島", "山口", "徳島", "香川", "愛媛", "高知", "福岡",
+      "佐賀", "長崎", "熊本", "大分", "宮崎", "鹿児島", "沖縄")
+
+    (returncity)
   }
 }
+
+//object SplitAddressAndSwarm{
+//  def splitaddress(string: String): String ={
+//    var pref = "(\\s...??[都県]|北海道|京都府|大阪府)"
+//    var returnPref = ""
+//    var swarm = "I'm at"
+//    var p : Pattern = Pattern.compile(pref)
+//    var m : Matcher = p.matcher(string)
+//    var s : Matcher = p.matcher(swarm)
+//    if(m.find() && s.find()){
+//      returnPref = m.group(1)
+//      returnPref = returnPref.trim
+//    }
+//    (returnPref)
+//  }
+//}
+
 
 object Csvperser{
   def opencsvToStringArray(args:Array[String]): Unit ={
