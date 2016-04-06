@@ -10,6 +10,7 @@ import org.apache.spark.streaming.{Seconds, StreamingContext}
 import org.atilika.kuromoji.{Token, Tokenizer}
 
 import scala.collection.mutable.ListBuffer
+import scala.io.Source
 
 //import twitter4j._
 //import twitter4j.conf._
@@ -217,16 +218,16 @@ object MikasaGeneralNotKafka {
 
       val topList = rdd.take(takeRankNum)
       var topListCsv: Array[String] = new Array[String](topList.length)
-      var hoge = 0
+      var minusCnt = 0
       // コマンドラインに出力
       println("¥ nPopular topics in last 60*60 seconds (%s words):".format(rdd.count()))
       topList.foreach { case (count, tag) =>
         println("%s (%s tweets)".format(tag, count))
         sendMsg.append("%s,%s".format(tag, count))
-        var tmp = "\""+ tag + "\""+  "," + "\""+ count + "\""
+        var tmp = "\"" + tag + "\"" + "," + "\"" + count + "\""
         //println(tmp)
-        topListCsv(hoge) = tmp
-        hoge += 1
+        topListCsv(minusCnt) = tmp
+        minusCnt += 1
       }
       // Send Msg to Kafka
       // TOPスコア順にワードを送信
@@ -235,6 +236,9 @@ object MikasaGeneralNotKafka {
       //      var tmp: Array[String] = sendMsg.toString().split("\t")
       //      Csvperser.writeToCsvFile(tmp)
       Csvperser.writeToCsvFile(topListCsv)
+
+      CreateOutputCsv.createTweetOfPrefecture
+
     })
     ssc.start()
     ssc.awaitTermination()
@@ -300,6 +304,22 @@ object SplitAddress {
     returncheckin
   }
 
+  def getaddress(tweet: String, pref: String): String = {
+    //var pref = "(\\s..??[県]|\\s...??[県]|北海道|東京都|京都府|大阪府)"
+    var pref = "(\\s..??[県]|北海道|東京都|京都府|大阪府|神奈川県|和歌山県|鹿児島県)"
+    //4文字の県だけで正規表現でひっかけていると頭に何かついたのも拾ってきてしまう
+    //採取県www
+    var tweetOfPrefectures = ""
+    //var swarm = "I'm at"
+    val p: Pattern = Pattern.compile(pref)
+    var m: Matcher = p.matcher(tweet)
+    if (m.find()) {
+      tweetOfPrefectures = m.group(0)
+      tweetOfPrefectures = tweetOfPrefectures.trim
+    }
+    tweetOfPrefectures
+  }
+
 }
 
 //object SplitAddressAndSwarm{
@@ -349,7 +369,7 @@ object Csvperser {
     //    writer.flush()
 
     var fos = new FileOutputStream("op.csv")
-    var osw = new OutputStreamWriter(fos,"SJIS")
+    var osw = new OutputStreamWriter(fos, "SJIS")
 
     var fileWriter = new FileWriter("output/tweetLogFile.csv", false)
     var bufferedWriter = new BufferedWriter(fileWriter)
@@ -363,6 +383,37 @@ object Csvperser {
   //  def isFileValid(): Unit ={
   //
   //  }
+}
+
+
+object CreateOutputCsv {
+  def createTweetOfPrefecture: Unit = {
+    val prefectures = Array("北海道", "青森県", "岩手県", "宮城県", "秋田県", "山形県", "福島県", "茨城県", "栃木県", "群馬県", "埼玉県", "千葉県",
+      "東京都", "神奈川県", "新潟県", "富山県", "石川県", "福井県", "山梨県", "長野県", "岐阜県", "静岡県", "愛知県", "三重県", "滋賀県", "京都府",
+      "大阪府", "兵庫県", "奈良県", "和歌山県", "鳥取県", "島根県", "岡山県", "広島県", "山口県", "徳島県", "香川県", "愛媛県", "高知県", "福岡県",
+      "佐賀県", "長崎県", "熊本県", "大分県", "宮崎県", "鹿児島県", "沖縄県")
+    var source = Source.fromFile("output/tweetLogFile.csv")
+    var lines = source.getLines
+    var tweetOfPrefectures: Array[String] = new Array[String](lines.length)
+
+    for (tweet <- lines) {
+
+    }
+
+
+
+
+
+    prefectures.foreach(
+      println(_)
+      //SplitAddress.getaddress(_,)
+    )
+
+
+
+    //都道府県の頭から～
+    source.close
+  }
 }
 
 //これは今回は使うのが難しいとわかったので，今後ローカルジオコーディングを実装する際の雛形にする．
