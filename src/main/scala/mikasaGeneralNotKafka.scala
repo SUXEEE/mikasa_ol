@@ -216,15 +216,25 @@ object MikasaGeneralNotKafka {
       val sendMsg = new StringBuilder()
 
       val topList = rdd.take(takeRankNum)
+      var topListCsv: Array[String] = new Array[String](topList.length)
+      var hoge = 0
       // コマンドラインに出力
       println("¥ nPopular topics in last 60*60 seconds (%s words):".format(rdd.count()))
       topList.foreach { case (count, tag) =>
         println("%s (%s tweets)".format(tag, count))
-        sendMsg.append("%s:%s,".format(tag, count))
+        sendMsg.append("%s,%s".format(tag, count))
+        var tmp = "\""+ tag + "\""+  "," + "\""+ count + "\""
+        //println(tmp)
+        topListCsv(hoge) = tmp
+        hoge += 1
       }
       // Send Msg to Kafka
       // TOPスコア順にワードを送信
       println(sendMsg.toString())
+      //var tmp: Array[String] = new Array[String](topList.length)
+      //      var tmp: Array[String] = sendMsg.toString().split("\t")
+      //      Csvperser.writeToCsvFile(tmp)
+      Csvperser.writeToCsvFile(topListCsv)
     })
     ssc.start()
     ssc.awaitTermination()
@@ -273,13 +283,12 @@ object SplitAddress {
     var returncheckin = ""
     var exp = "I'm at (.+?) in"
     var matchstr = ""
-//    val javalist: java.util.List[String] = new util.ArrayList[String](10)//ていうかリストじゃなくてよくねｗ
-//    val scalalist: ListBuffer[String] = ListBuffer()
+    //    val javalist: java.util.List[String] = new util.ArrayList[String](10)//ていうかリストじゃなくてよくねｗ
+    //    val scalalist: ListBuffer[String] = ListBuffer()
     val p: Pattern = Pattern.compile(exp)
     var m: Matcher = p.matcher(string)
-
     //while (m.find()) {
-    if(m.find()){
+    if (m.find()) {
       matchstr = m.group(1)
     }
     if (matchstr != null) {
@@ -333,10 +342,22 @@ object Csvperser {
 
   def writeToCsvFile(args: Array[String]): Unit = {
 
-    var writer = new CSVWriter(new FileWriter("output/outPut.csv", true))
-    var strArr = args
-    writer.writeNext(strArr)
-    writer.flush()
+    //めんどくさいし,FileReaderで1行ずつ書き込もう
+    //    var writer = new CSVWriter(new FileWriter("output/outPut.csv", false))
+    //    var strArr = args
+    //    writer.writeNext(strArr)
+    //    writer.flush()
+
+    var fos = new FileOutputStream("op.csv")
+    var osw = new OutputStreamWriter(fos,"SJIS")
+
+    var fileWriter = new FileWriter("output/tweetLogFile.csv", false)
+    var bufferedWriter = new BufferedWriter(fileWriter)
+    for (tweet <- args) {
+      bufferedWriter.write(tweet.toString())
+      bufferedWriter.newLine()
+    }
+    bufferedWriter.close()
   }
 
   //  def isFileValid(): Unit ={
