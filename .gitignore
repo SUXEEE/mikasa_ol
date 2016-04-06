@@ -15,4 +15,5 @@ dist
 /.settings
 config/application.properties
 private
-project/output
+project/output/nonWordSearchBackup/
+project/output/outputGeo.csv
