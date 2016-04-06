@@ -1,4 +1,5 @@
 import java.io._
+import java.util
 import java.util.Properties
 import java.util.regex.{Matcher, Pattern}
 
@@ -106,7 +107,7 @@ object MikasaGeneralNotKafka {
 //        Csvperser.writeToCsvFileGeo(tweetTextArrayGeo)
 //      }
 //      Csvperser.writeToCsvFile(tweetTextArray)
-      //print(tweetText)
+      print(tweetText+ "\n")
       val japanese_pattern : Pattern = Pattern.compile("[¥¥u3040-¥¥u309F]+") //「ひらがなが含まれているか？」の正規表現
 
       if(status.getGeoLocation != null
@@ -150,6 +151,7 @@ object MikasaGeneralNotKafka {
         //ファイル書き出しnonGeo
 
         var tweetPref : String = SplitAddress.splitaddress(tweetText)
+        println("抜き出した都道府県 :"+ tweetPref+ "\n")
         var tweetCity : String = SplitAddress.splitaddresscity(tweetText)
         val tokens : java.util.List[Token] = CustomTwitterTokenizer4.tokenize(tweetText, dictFilePath)
         val pattern : Pattern = Pattern.compile("^[a-zA-Z]+$|^[0-9]+$") //「英数字か？」の正規表現
@@ -166,10 +168,10 @@ object MikasaGeneralNotKafka {
               if(features != tweetPref && features != "日本") {
                 features += tweetPref + ":" + tokens.get(index).getSurfaceForm
               }
-              //println(tokens.get(index).getAllFeaturesArray()(1))
+              println(tokens.get(index).getAllFeaturesArray()(1))
             } else if (tokens.get(index).getPartOfSpeech == "カスタム名詞") {
-              //println(tokens.get(index).getPartOfSpeech)
-              //println(tokens.get(index).getSurfaceForm)
+              println(tokens.get(index).getPartOfSpeech)
+              println(tokens.get(index).getSurfaceForm)
               //ここで都道府県と連結
               if(features != tweetPref && features != "日本") {
               //if(features != tweetPref && features != "日本" && features != tweetCity) {
@@ -258,6 +260,21 @@ object SplitAddress{
 
     (returncity)
   }
+
+  def splitcheckin(string: String): String = {
+    var returncheckin = ""
+    var exp = "I'm at (.+?) in";
+    val javalist : java.util.List[String] = new util.ArrayList[String]()
+    var p : Pattern = Pattern.compile(exp)
+    var m : Matcher = p.matcher(string)
+
+    while(m.find()){
+      javalist.add(m.group(1))
+    }
+    returncheckin = javalist.get(0)
+    (returncheckin)
+  }
+
 }
 
 //object SplitAddressAndSwarm{
