@@ -321,7 +321,12 @@ object SplitAddress {
 
   def checkprefectures(tweet: String, pref: String): Boolean = {
     //var prefecture = "(\\s..??[県]|\\s...??[県]|北海道|東京都|京都府|大阪府)"
-    var prefecture = "(\\s..??[県]|北海道|東京都|京都府|大阪府|神奈川県|和歌山県|鹿児島県)"
+    var prefecture = "北海道|青森県|岩手県|宮城県|秋田県|山形県|福島県|茨城県|栃木県|群馬県|" +
+      "埼玉県|千葉県|東京都|神奈川県|新潟県|富山県|石川県|福井県|山梨県|長野県|岐阜県|静岡県|愛知県|" +
+      "三重県|滋賀県|京都府|大阪府|兵庫県|奈良県|和歌山県|鳥取県|島根県|岡山県|広島県|山口県|徳島県|香川県|" +
+      "愛媛県|高知県|福岡県|佐賀県|長崎県|熊本県|大分県|宮崎県|鹿児島県|沖縄県"
+    //var prefecture = "(\\s..??[県]|北海道|東京都|京都府|大阪府|神奈川県|和歌山県|鹿児島県)"
+    //var prefecture = ":(.+?)\","
     var boolean = false
     var tweetOfPrefectures = ""
     val p: Pattern = Pattern.compile(prefecture)
@@ -338,6 +343,26 @@ object SplitAddress {
     boolean
   }
 
+}
+
+object SplitTweetWord{
+  def getKurmojiWord(string: String): String = {
+    var returnWord = ""
+    var exp = ":(.+?)\","
+    var matchstr = ""
+    val p: Pattern = Pattern.compile(exp)
+    var m: Matcher = p.matcher(string)
+    if (m.find()) {
+      matchstr = m.group(1)
+    }
+    if (matchstr != null) {
+      returnWord = matchstr
+      returnWord = returnWord.trim
+    } else {
+      returnWord = ""
+    }
+    returnWord
+  }
 }
 
 //object SplitAddressAndSwarm{
@@ -410,16 +435,15 @@ object CreateOutputCsv {
       "東京都", "神奈川県", "新潟県", "富山県", "石川県", "福井県", "山梨県", "長野県", "岐阜県", "静岡県", "愛知県", "三重県", "滋賀県", "京都府",
       "大阪府", "兵庫県", "奈良県", "和歌山県", "鳥取県", "島根県", "岡山県", "広島県", "山口県", "徳島県", "香川県", "愛媛県", "高知県", "福岡県",
       "佐賀県", "長崎県", "熊本県", "大分県", "宮崎県", "鹿児島県", "沖縄県")
-
     var source = Source.fromFile("output/tweetLogFile.csv")
     //var fileLines = source.getLines.toList
     var fileLines = source.getLines.toArray
     //var tweetOfPrefectures: Array[String] = new Array[String](fileLines.length)
-
     val TweetArray = fileLines.filterNot(_.isEmpty).map { line =>
       (line.toArray).filter(e => e != ' ')
       //(line.toList).filter(e => e != ' ')
     }.toArray
+
     //    println("arrayのチェック\n")
     //    println(TweetArray.deep.mkString("\n"))
     //各都道府県のループ
@@ -430,9 +454,11 @@ object CreateOutputCsv {
       var tmpBool = false
       tmpBool = SplitAddress.checkprefectures(TweetArray(cntT).mkString(""),prefectures(cntP))
       if(tmpBool == true){
-        println("true\n")
-        println(prefectures(cntP)+"\n")
+        println("true ")
+        println(prefectures(cntP) +"")
         println(TweetArray(cntT).mkString(""))
+        println(SplitTweetWord.getKurmojiWord(TweetArray(cntT).mkString("")))
+        //tmpBool = false
       }else{
         //println("false\n")
         //println(TweetArray(cntT).mkString(""))
