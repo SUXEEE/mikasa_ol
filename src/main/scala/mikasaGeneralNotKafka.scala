@@ -17,6 +17,8 @@ import scala.io.Source
 //import scala.collection.JavaConversions._
 import com.opencsv.CSVWriter
 
+import scala.util.control.Breaks
+
 /**
   * Created by AKB428 on 2015/06/05.
   *
@@ -335,9 +337,9 @@ object SplitAddress {
       tweetOfPrefectures = m.group(0)
       tweetOfPrefectures = tweetOfPrefectures.trim
     }
-    if(pref == tweetOfPrefectures){
+    if (pref == tweetOfPrefectures) {
       boolean = true
-    }else{
+    } else {
       boolean = false
     }
     boolean
@@ -345,10 +347,30 @@ object SplitAddress {
 
 }
 
-object SplitTweetWord{
+object SplitTweetWord {
   def getKurmojiWord(string: String): String = {
     var returnWord = ""
     var exp = ":(.+?)\","
+    var matchstr = ""
+    val p: Pattern = Pattern.compile(exp)
+    var m: Matcher = p.matcher(string)
+    if (m.find()) {
+      matchstr = m.group(1)
+    }
+    if (matchstr != null) {
+      returnWord = matchstr
+      returnWord = returnWord.trim
+    } else {
+      returnWord = ""
+    }
+    returnWord
+  }
+
+  def getKurmojiCount(string: String): String
+
+  = {
+    var returnWord = ""
+    var exp = ",\"(.+?)\""
     var matchstr = ""
     val p: Pattern = Pattern.compile(exp)
     var m: Matcher = p.matcher(string)
@@ -423,6 +445,14 @@ object Csvperser {
     bufferedWriter.close()
   }
 
+  def writeToJSCsvFile(args: Array[String]): Unit = {
+    //多次元配列に拡張しないと無理かも
+    var writer = new CSVWriter(new FileWriter("output/tweetOfPrefecture.csv", false))
+    var strArr = args
+    writer.writeNext(strArr)
+    writer.flush()
+  }
+
   //  def isFileValid(): Unit ={
   //
   //  }
@@ -438,32 +468,91 @@ object CreateOutputCsv {
     var source = Source.fromFile("output/tweetLogFile.csv")
     //var fileLines = source.getLines.toList
     var fileLines = source.getLines.toArray
-    //var tweetOfPrefectures: Array[String] = new Array[String](fileLines.length)
     val TweetArray = fileLines.filterNot(_.isEmpty).map { line =>
       (line.toArray).filter(e => e != ' ')
       //(line.toList).filter(e => e != ' ')
     }.toArray
+    //var tweet2Csv: Array[String] = new Array[String](47)
+
+    //var tweetOfPrefectures: Array[String] = new Array[String](47)(TweetArray.length)
+    val tweetOfPrefecture2Csv: Array[String] = new Array[String](48)
+    val columOfPrefecture = ("ken", "tweetAll", "tweet1", "tweet2", "tweet3")
+    tweetOfPrefecture2Csv(0) = "\"ken\",\"tweetAll\",\"tweet1\",\"tweet2\",\"tweet3\""
+    //tweetOfPrefecture2Csv(0) = "ken" + "," + "tweetAll" + "," + "tweet1" + "," + "tweet2" + "," + "tweet3"
+
+    //tweetOfPrefecture2Csv(0) = columOfPrefecture
+
+    val topThreeTweet = Array.ofDim[String](47, 3)
+    //top3の合計出すだけならintで合計して保持しおけばよくない？
+    val hoge2 = Array.ofDim[String](48, 3)
+
+    //var tweetOfPrefecturesCount: Array[Int] = new Array[Int](47)(3)
+    //本当は先頭3つにしたい
+    //val b = new Breaks
 
     //    println("arrayのチェック\n")
     //    println(TweetArray.deep.mkString("\n"))
     //各都道府県のループ
     //格納されたツイートのループ
-    for (cntP <- 0 to prefectures.length-1; cntT <- 0 to TweetArray.length-1) yield {
-//      println("\n")
-//      println(prefectures(cntP) +" : "+ TweetArray(cntT).toString())
+    //    for (cntP <- 0 to prefectures.length-1; cntT <- 0 to TweetArray.length-1) yield {
+    ////      println("\n")
+    ////      println(prefectures(cntP) +" : "+ TweetArray(cntT).toString())
+    //      var tmpBool = false
+    //
+    //      tmpBool = SplitAddress.checkprefectures(TweetArray(cntT).mkString(""),prefectures(cntP))
+    //      if(tmpBool == true){
+    //        println("true ")
+    //        println(prefectures(cntP) +"")
+    //        println(TweetArray(cntT).mkString(""))
+    //        println(SplitTweetWord.getKurmojiWord(TweetArray(cntT).mkString("")))
+    //        println(SplitTweetWord.getKurmojiCount(TweetArray(cntT).mkString("")))
+    //
+    //        hoge(cntP+1)(0) = SplitTweetWord.getKurmojiWord(TweetArray(cntT).mkString(""))
+    //        hoge2(cntP+1)(0) = SplitTweetWord.getKurmojiCount(TweetArray(cntT).mkString(""))
+    //
+    //        println("取り出した"+hoge(cntP)(0) + hoge2(cntP)(0))
+    //      }else{
+    //        //println("false\n")
+    //        //println(TweetArray(cntT).mkString(""))
+    //      }
+    //    }
+
+    for (cntP <- 0 to prefectures.length - 1) {
+      var cnt = 0
+      var allTweetCount = 0
       var tmpBool = false
-      tmpBool = SplitAddress.checkprefectures(TweetArray(cntT).mkString(""),prefectures(cntP))
-      if(tmpBool == true){
-        println("true ")
-        println(prefectures(cntP) +"")
-        println(TweetArray(cntT).mkString(""))
-        println(SplitTweetWord.getKurmojiWord(TweetArray(cntT).mkString("")))
-        //tmpBool = false
-      }else{
-        //println("false\n")
-        //println(TweetArray(cntT).mkString(""))
+      var tmpPref = ""
+      for (cntT <- 0 to TweetArray.length - 1) {
+        tmpPref = SplitAddress.splitaddress(TweetArray(cntT).mkString(""))
+        tmpBool = SplitAddress.checkprefectures(TweetArray(cntT).mkString(""), prefectures(cntP))
+        if (tmpBool == true && cnt < 3) {
+          //          println("true ")
+          //          println(prefectures(cntP) +"")
+          //          println(TweetArray(cntT).mkString(""))
+          //          println(SplitTweetWord.getKurmojiWord(TweetArray(cntT).mkString("")))
+          //          println(SplitTweetWord.getKurmojiCount(TweetArray(cntT).mkString("")))
+          topThreeTweet(cntP)(cnt) = SplitTweetWord.getKurmojiWord(TweetArray(cntT).mkString(""))
+          //↓今はstring返してるからintに変えないと
+          hoge2(cntP)(cnt) = SplitTweetWord.getKurmojiCount(TweetArray(cntT).mkString(""))
+
+          //全部の県を格納したいんじゃが…
+          if (cnt == 2) {
+            tweetOfPrefecture2Csv(cntP + 1) = prefectures(cntP) + "," + "," + topThreeTweet(cntP)(0) + "," + topThreeTweet(cntP)(1) + "," + topThreeTweet(cntP)(2)
+            println(tweetOfPrefecture2Csv(cntP + 1).mkString(""))
+            print("\n")
+          }
+          cnt += 1
+
+        } else {
+          //println("false\n")
+          //println(TweetArray(cntT).mkString(""))
+        }
       }
     }
+    //先頭一行を加えた,JSで読み込むCSVを出力
+    Csvperser.writeToJSCsvFile(tweetOfPrefecture2Csv)
+    //tweetOfPrefecture.csv
+    //"ken","tweetAll","tweet1","tweet2","tweet3"
     source.close
   }
 }
