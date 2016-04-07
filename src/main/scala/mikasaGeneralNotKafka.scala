@@ -261,7 +261,6 @@ object SplitAddress {
     //4文字の県だけで正規表現でひっかけていると頭に何かついたのも拾ってきてしまう
     //採取県www
     var returnPref = ""
-    //var swarm = "I'm at"
     val p: Pattern = Pattern.compile(pref)
     var m: Matcher = p.matcher(string)
     if (m.find()) {
@@ -393,22 +392,15 @@ object CreateOutputCsv {
       "大阪府", "兵庫県", "奈良県", "和歌山県", "鳥取県", "島根県", "岡山県", "広島県", "山口県", "徳島県", "香川県", "愛媛県", "高知県", "福岡県",
       "佐賀県", "長崎県", "熊本県", "大分県", "宮崎県", "鹿児島県", "沖縄県")
     var source = Source.fromFile("output/tweetLogFile.csv")
-    var lines = source.getLines
-    var tweetOfPrefectures: Array[String] = new Array[String](lines.length)
+    var fileLines = source.getLines.toList
+    //var tweetOfPrefectures: Array[String] = new Array[String](fileLines.length)
 
-    for (tweet <- lines) {
+    val myArray = fileLines.filterNot(_.isEmpty).map { line =>
+      (line.toList).filter(e => e != ' ')
+    }.toArray
 
-    }
-
-
-
-
-
-    prefectures.foreach(
-      println(_)
-      //SplitAddress.getaddress(_,)
-    )
-
+//    println("arrayのチェック\n")
+//    println(myArray.deep.mkString("\n"))
 
 
     //都道府県の頭から～
