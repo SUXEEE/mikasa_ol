@@ -250,7 +250,7 @@ object MikasaGeneralNotKafka {
 
 object CustomTwitterTokenizer4 {
   def tokenize(text: String, dictPath: String): java.util.List[Token] = {
-    Tokenizer.builder().mode(Tokenizer.Mode.SEARCH)
+    Tokenizer.builder().mode(Tokenizer.Mode.NORMAL)
       .userDictionary(dictPath)
       .build().tokenize(text)
   }
@@ -366,9 +366,7 @@ object SplitTweetWord {
     returnWord
   }
 
-  def getKurmojiCount(string: String): String
-
-  = {
+  def getKurmojiCount(string: String): String  = {
     var returnWord = ""
     var exp = ",\"(.+?)\""
     var matchstr = ""
@@ -460,6 +458,7 @@ object Csvperser {
 
 
 object CreateOutputCsv {
+
   def createTweetOfPrefecture: Unit = {
     val prefectures = Array("北海道", "青森県", "岩手県", "宮城県", "秋田県", "山形県", "福島県", "茨城県", "栃木県", "群馬県", "埼玉県", "千葉県",
       "東京都", "神奈川県", "新潟県", "富山県", "石川県", "福井県", "山梨県", "長野県", "岐阜県", "静岡県", "愛知県", "三重県", "滋賀県", "京都府",
@@ -484,7 +483,8 @@ object CreateOutputCsv {
 
     val topThreeTweet = Array.ofDim[String](47, 3)
     //top3の合計出すだけならintで合計して保持しおけばよくない？
-    val hoge2 = Array.ofDim[String](48, 3)
+    val topThreeTweetCount = Array.ofDim[String](47, 3)
+
 
     //var tweetOfPrefecturesCount: Array[Int] = new Array[Int](47)(3)
     //本当は先頭3つにしたい
@@ -522,6 +522,8 @@ object CreateOutputCsv {
       var allTweetCount = 0
       var tmpBool = false
       var tmpPref = ""
+      var tweetAll =0
+      var tweetAllString = ""
       for (cntT <- 0 to TweetArray.length - 1) {
         tmpPref = SplitAddress.splitaddress(TweetArray(cntT).mkString(""))
         tmpBool = SplitAddress.checkprefectures(TweetArray(cntT).mkString(""), prefectures(cntP))
@@ -533,13 +535,17 @@ object CreateOutputCsv {
           //          println(SplitTweetWord.getKurmojiCount(TweetArray(cntT).mkString("")))
           topThreeTweet(cntP)(cnt) = SplitTweetWord.getKurmojiWord(TweetArray(cntT).mkString(""))
           //↓今はstring返してるからintに変えないと
-          hoge2(cntP)(cnt) = SplitTweetWord.getKurmojiCount(TweetArray(cntT).mkString(""))
-
+          topThreeTweetCount(cntP)(cnt) = SplitTweetWord.getKurmojiCount(TweetArray(cntT).mkString(""))
+          //tweetAll += topThreeTweetCount(cntP)(cnt).toInt
           //全部の県を格納したいんじゃが…
           if (cnt == 2) {
-            tweetOfPrefecture2Csv(cntP + 1) = prefectures(cntP) + "," + "," + topThreeTweet(cntP)(0) + "," + topThreeTweet(cntP)(1) + "," + topThreeTweet(cntP)(2)
+            if(topThreeTweetCount(cntP)(0) != null) {
+              tweetAll = topThreeTweetCount(cntP)(0).toInt + topThreeTweetCount(cntP)(1).toInt + topThreeTweetCount(cntP)(2).toInt
+              tweetAllString = tweetAll.toString
+            }
+            //tweetOfPrefecture2Csv(cntP + 1) = prefectures(cntP) + ","+ tweetAllString +"," + topThreeTweet(cntP)(0) + "," + topThreeTweet(cntP)(1) + "," + topThreeTweet(cntP)(2)
+            tweetOfPrefecture2Csv(cntP + 1) = prefectures(cntP) + ","+ tweetAllString+ "," + topThreeTweet(cntP)(0) + "," + topThreeTweet(cntP)(1) + "," + topThreeTweet(cntP)(2)
             println(tweetOfPrefecture2Csv(cntP + 1).mkString(""))
-            print("\n")
           }
           cnt += 1
 
@@ -551,9 +557,30 @@ object CreateOutputCsv {
     }
     //先頭一行を加えた,JSで読み込むCSVを出力
     Csvperser.writeToJSCsvFile(tweetOfPrefecture2Csv)
+//    val file = new PrintWriter("output/tweetOfPrefectureKai.csv")
+//    for(cnt <- tweetOfPrefecture2Csv){
+//      file.write(tweetOfPrefecture2Csv(cnt)map(_.toByte))
+//    }
+   //file.close()
+    //printToFile(new File("output/tweetOfPrefectureKai.csv")) { p =>
+    printToFile(new File("JPTweetD3/tweetData/tweetOfPrefectureKai.csv")) { p =>
+      tweetOfPrefecture2Csv.foreach(p.println)
+    }
     //tweetOfPrefecture.csv
     //"ken","tweetAll","tweet1","tweet2","tweet3"
     source.close
+  }
+
+  def printToFile(f: java.io.File)(op: java.io.PrintWriter => Unit) {
+    val p = new java.io.PrintWriter(f)
+    try { op(p) } finally { p.close() }
+  }
+}
+
+object StringUtils {
+  implicit class StringImprovements(val s: String) {
+    import scala.util.control.Exception._
+    def toIntOpt = catching(classOf[NumberFormatException]) opt s.toInt
   }
 }
 
