@@ -563,7 +563,7 @@ object CreateOutputCsv {
 //    }
    //file.close()
     //printToFile(new File("output/tweetOfPrefectureKai.csv")) { p =>
-    printToFile(new File("JPTweetD3/tweetData/tweetOfPrefectureKai.csv")) { p =>
+    printToFile(new File("../JPTweetD3/tweetData/tweetOfPrefectureKai.csv")) { p =>
       tweetOfPrefecture2Csv.foreach(p.println)
     }
     //tweetOfPrefecture.csv
